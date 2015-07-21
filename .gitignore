@@ -1,0 +1,6 @@
+*.swp
+*.fs
+.gdbinit
+*.o
+boot
+derp
