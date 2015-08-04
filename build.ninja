@@ -1,7 +1,7 @@
 builddir = build
 
 rule hdiutil_create_fat
-    command = hdiutil create -ov -fs "MS-DOS FAT32" -layout NONE -megabytes $size_mb $out
+    command = hdiutil create -ov -fs "MS-DOS FAT32" -layout NONE -megabytes $size_mb $out.dmg && mv $out.dmg $out
     description = hdiutil $out
 
 rule copy_stage1
@@ -20,7 +20,7 @@ rule ld
     command = x86_64-unknown-linux-ld -T$script -o $out $in
     description = ld
 
-img = $builddir/boot.dmg
+img = $builddir/boot.img
 stage1 = $builddir/fatboot.bin
 stage2 = $builddir/stage2.ldr
 stage2_file = stage2.ldr
