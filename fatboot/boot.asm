@@ -1,5 +1,3 @@
-bits 16
-
 org 0x7C5A
 
 FATCACHE: equ 0x7e00
@@ -53,212 +51,101 @@ endstruc
 
 section .text align=1
 
-jmp 0:start
+	jmp 0:start ; fix CS
 start:
-xor ax, ax
-mov ds, ax
-mov es, ax
-mov fs, ax
-mov gs, ax
-mov ss, ax
-mov sp, 0x7C00
-mov bp, sp
+	xor ax, ax
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
+	mov sp, 0x7C00 ; stack grows down from here
+	mov bp, sp
 
-push dx ; save drive letter
+	cld ; make no assumptions
+	sti ; BIOS may do stuff with interrupts
+	push dx ; save the drive letter for later; accessible at [bp-2]
 
-stc
-mov ah, 0x41
-mov bx, 0x55aa
-int 0x13
+	call ext_read_supported
+	test ax, ax
+	jz die ; don't bother if we don't support disk extensions
 
-jc .baddisk
-cmp bx, 0xaa55
-jne .baddisk
+	; compute the first data sector and push it, too
+	movzx eax, byte [0x7C00+bpb.num_fats]
+	mov ebx, [0x7C00+bpb.sectors_per_fat_32]
+	mul ebx
+	jo die ; overflowed into dx, we don't handle that, so just give up
 
-xor ax, ax
-mov al, [0x7C00+bpb.num_fats]
-mul dword [0x7C00+bpb.sectors_per_fat_32]
-add ax, word [0x7C00+bpb.reserved_sectors]
-; ax now has first data sector
-push ax
+	movzx ebx, word [0x7C00+bpb.reserved_sectors]
+	add eax, ebx
 
-mov eax, [0x7C00+bpb.root_cluster]
-mov ecx, eax
-.nextsect:
-sub eax, 2
-mul byte [0x7C00+bpb.sectors_per_cluster]
-add ax, [bp-4]
+	; EAX now has first data sector, it will be accessible at [bp-6]
+	push eax
 
-mov esi, eax ; FIXME from here
-mov di, LOADLOC
-call read_cluster
+	mov edi, 0x8000
+	mov eax, [0x7C00+bpb.root_cluster]
+	call fat_read_cluster
 
-; Parse directory
-mov bx, LOADLOC
-.l
-mov al, [bx]
-xor di, di
-mov di, bx
-mov dx, bx
-add bx, fatde_size
-test al, al ; last entry
-jz .more
-cmp al, 0xE5 ; unused
-je .l
+die:
+	cli
+	hlt
+	jmp die
 
-mov si, filename
-mov cx, 11
-repe cmpsb
-je .load_file
-jmp .l
+ext_read_supported:
+	push bx
+	push cx ; not used here, but interrupt may clobber
 
-.more:
+	mov ah, 0x41
+	mov bx, 0x55aa
+	stc ; carry clear on success
+	int 0x13
+	mov ax, 0 ; 0 = didn't work
+	jc .ret ; failed if carry
+	cmp bx, 0xaa55 ; failed if this isn't rotated
+	jne .ret
+	mov ax, 1 ; 1 = worked
+.ret:
+	pop cx
+	pop bx
+	ret
 
-mov eax, ecx
-call get_fat_cluster
-cmp eax, 0x0FFFFFF8
-jae .baddisk
-jmp .nextsect
+ext_read_sector:
+	push dx
+	push si
 
-jmp .hlt
+	mov [dap.lba], esi
+	mov [dap.dest], edi
+	mov ah, 0x42
+	mov dx, [bp-2] ; grab drive letter
+	mov si, dap
+	stc
+	int 0x13
+	mov ax, 0 ; assume failed
+	jc .ret ; failed if carry
+	mov ax, 1
 
-.baddisk:
-mov cx, baddisk.size
-mov bp, baddisk
-call print
-cli
-.hlt:
-hlt
-jmp .hlt
-
-.load_file:
-mov bx, dx
-mov ax, [bx+fatde.clust_hi]
-shl eax, 16
-or ax, [bx+fatde.clust_lo]
-
-mov di, LOADLOC
-.again:
-mov esi, eax
-sub esi, 2
-mov ebx, eax
-mov eax, esi
-xor ecx, ecx
-mov cl, [0x7C00+bpb.sectors_per_cluster]
-mul ecx
-add ax, [bp-4]
-mov esi, eax
-mov eax, ebx
-call read_cluster
-mov bx, ax
-xor ax, ax
-mov al, [0x7C00+bpb.sectors_per_cluster]
-mul word [0x7C00+bpb.sector_size]
-add di, ax
-mov ax, bx
-call get_fat_cluster
-cmp eax, 0x0FFFFFF8
-jae .done
-jmp .again
-.done:
-jmp LOADLOC
-
-
-; read one cluster from si into di, provided sl
-read_cluster:
-push ax
-push bx
-
-; patch DAP
-xor ax, ax
-mov al, [0x7C00+bpb.sectors_per_cluster]
-mov bx, [dap.num_blocks]
-;mov [dap.num_blocks], ax
-
-call read
-
-; unpatch DAP
-;mov [dap.num_blocks], bx
-
-pop bx
-pop ax
-ret
-
-; read one sector from esi into edi, provided dl
-read:
-pushad
-stc
-mov ah, 0x42
-mov dx, [bp-2]
-mov [dap.lba], esi
-mov [dap.dest], edi
-mov si, dap
-int 0x13
-jc start.baddisk
-test ah, ah
-jnz start.baddisk
-popad
-ret
-
-; returns entry for cluster ax, in eax
-get_fat_cluster:
-push si
-push di
-push cx
-
-mov dx, 4 ; 32 bits
-mul dx
-mov cx, ax ; store this for later
-mov si, [0x7C00+bpb.sector_size]
-xor dx, dx ; high bits of dividend
-div si
-mov si, [0x7C00+bpb.reserved_sectors] ; first FAT sector
-add ax, si
-; ax now has sector number, so read it
-mov si, ax
-mov di, FATCACHE
-call read
-
-mov ax, cx ; now we need this (offset into FAT) to get the remainder
-xor dx, dx
-mov si, [0x7C00+bpb.sector_size]
-div si
-; now DX has remainder
-mov si, dx
-mov ax, si
-;mov cx, 4
-;mul cx
-mov si, ax
-mov eax, [FATCACHE+si]
-
-; mask out "reserved" bits
-and eax, 0x0FFFFFFF
-
-pop cx
-pop di
-pop si
-ret
-
-print:
-pushad
-.l:
-mov al, [bp]
-inc bp
-mov ah, 0x0E
-xor bx, bx
-int 0x10
-loop .l
-popad
-ret
-
+.ret:
+	pop si
+	pop dx
+	ret
 dap:
 .size: db 0x10
 ._reserved: db 0
-.num_blocks: dw 1
+.blocks: dw 1
 .dest: dd 0
 .lba: dq 0
 
-baddisk: db "Disk error"
-.size: equ $-baddisk
+fat_read_cluster:
+	push ebx
+	push esi
 
-filename: db "STAGE2  LDR"
+	sub eax, 2 ; cluster number - 2
+	movzx ebx, byte [0x7C00+bpb.sectors_per_cluster]
+	mul ebx ; * sectors_per_cluster
+	jo die ; again, die on overflow
+	add eax, [bp-6] ; + first_data_sector
+	mov esi, eax
+	mov [dap.blocks], bx
+	call ext_read_sector
+
+	pop esi
+	pop ebx
+	ret
