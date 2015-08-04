@@ -1,0 +1,41 @@
+builddir = build
+
+rule hdiutil_create_fat
+    command = hdiutil create -ov -fs "MS-DOS FAT32" -layout NONE -megabytes $size_mb $out
+    description = hdiutil $out
+
+rule copy_stage1
+    command = dd if=$stage1 of=$img conv=notrunc bs=1 count=420 seek=90 && touch $out
+    description = copy stage1
+
+rule copy_stage2
+    command = mcopy -D o -D O -ni $img $stage2 ::/$stage2_file && touch $out
+    description = copy stage2
+
+rule yasm
+    command = yasm -f$fmt -o $out $in
+    description = yasm $out
+
+rule ld
+    command = x86_64-unknown-linux-ld -T$script -o $out $in
+    description = ld
+
+img = $builddir/boot.dmg
+stage1 = $builddir/fatboot.bin
+stage2 = $builddir/stage2.ldr
+stage2_file = stage2.ldr
+
+build $img: hdiutil_create_fat
+    size_mb = 40
+build $builddir/.stage1_copied: copy_stage1 | $img $stage1
+build $builddir/.stage2_copied: copy_stage2 | $img $stage2
+
+build $stage1: yasm fatboot/boot.asm
+    fmt = bin
+
+build $stage2: ld $builddir/load.o
+    script = stage2/load.ld
+build $builddir/load.o: yasm stage2/load.asm
+    fmt = elf
+
+default $builddir/.stage1_copied $builddir/.stage2_copied
