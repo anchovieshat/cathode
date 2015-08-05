@@ -82,7 +82,34 @@ start:
 
 	mov edi, 0x8000
 	mov eax, [0x7C00+bpb.root_cluster]
-	call fat_read_cluster
+	call fat_read_file
+
+	mov ebx, 0x8000
+.l:
+	mov al, [ebx]
+	test al, al
+	jz .notfound
+	cmp al, 0xE5 ; unused
+	je .next
+	mov cx, 11
+	mov si, filename
+	mov di, bx ; FIXME inconsistent
+	rep cmpsb
+	je .found
+.next:
+	add ebx, fatde_size
+	jmp .l
+.notfound:
+	jmp die
+.found:
+	mov ax, [ebx+fatde.clust_hi]
+	shl eax, 16
+	mov ax, [ebx+fatde.clust_lo]
+	mov edi, 0x8000
+	call fat_read_file
+	test ax, ax
+	jz die
+	jmp 0x8000
 
 die:
 	cli
@@ -149,3 +176,55 @@ fat_read_cluster:
 	pop esi
 	pop ebx
 	ret
+
+fat_next_cluster:
+	push ebx
+	push edx
+	push esi
+	push edi
+
+	mov ebx, 4
+	mul ebx ; multiply by 4, as each 32-bit entry is 4 bytes
+	jo die ; again, die on overflow
+
+	cdq ; prepare for division
+	movzx ebx, word [0x7C00+bpb.sector_size]
+	div ebx ; edx has remainder
+
+	movzx ebx, word [0x7C00+bpb.reserved_sectors] ; first FAT sector
+	add eax, ebx
+
+	; read sector eax, then index it by edx
+	mov edi, 0x7E00
+	mov esi, eax
+	mov word [dap.blocks], 1
+	call ext_read_sector
+	test ax, ax
+	jz .ret ; early return on failure
+
+	mov eax, [0x7E00+edx]
+	or eax, 0x0FFFFFFF ; ignore "reserved" bits
+
+.ret:
+	pop edi
+	pop esi
+	pop edx
+	pop ebx
+	ret
+
+fat_read_file:
+	push ebx
+.l:
+	cmp eax, 0xFFFFFF8
+	jae .ret
+	call fat_read_cluster
+	movzx ebx, word [0x7C00+bpb.sector_size]
+	add edi, ebx
+	call fat_next_cluster
+	jmp .l
+
+.ret:
+	pop ebx
+	ret
+
+filename: db "STAGE2  LDR"
