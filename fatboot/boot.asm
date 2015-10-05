@@ -163,6 +163,7 @@ dap:
 fat_read_cluster:
 	push ebx
 	push esi
+	push eax
 
 	sub eax, 2 ; cluster number - 2
 	movzx ebx, byte [0x7C00+bpb.sectors_per_cluster]
@@ -173,6 +174,7 @@ fat_read_cluster:
 	mov [dap.blocks], bx
 	call ext_read_sector
 
+	pop eax
 	pop esi
 	pop ebx
 	ret
@@ -203,7 +205,7 @@ fat_next_cluster:
 	jz .ret ; early return on failure
 
 	mov eax, [0x7E00+edx]
-	or eax, 0x0FFFFFFF ; ignore "reserved" bits
+	and eax, 0x0FFFFFFF ; ignore "reserved" bits
 
 .ret:
 	pop edi
