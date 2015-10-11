@@ -2,6 +2,7 @@ bits 16
 
 section .text16
 start:
+	mov dx, [bp-2] ; keep drive letter around
 	mov bp, msg
 	mov cx, msg.size
 	call print
@@ -15,6 +16,7 @@ start:
 	call die
 .s:
 	cli
+.goto_prot
 	lgdt [gdtr]
 	mov eax, cr0
 	or eax, 1
@@ -91,6 +93,10 @@ prot_start:
 	mov gs, eax
 	mov ss, eax
 	mov esp, 0x8000
+	mov ebp, esp
+	mov eax, edx
+	movzx eax, dl
+	push eax ; push drive letter, at [bp-4]
 	hlt
 	jmp $
 
@@ -108,18 +114,30 @@ gdt:
 	   db 0
 	   db 00010000b
 	   dw 0
-.code: dw 0xffff
-	   dw 0
-	   db 0
-	   db 10011010b
-	   db 11001111b
-	   db 0
-.data: dw 0xffff
-	   dw 0
-	   db 0
-	   db 10010010b
-	   db 11001111b
-	   db 0
+.code32: dw 0xffff
+	     dw 0
+	     db 0
+	     db 10011010b
+	     db 11001111b
+	     db 0
+.data32: dw 0xffff
+	     dw 0
+	     db 0
+	     db 10010010b
+	     db 11001111b
+	     db 0
+.code16: dw 0xffff
+		 dw 0
+		 db 0
+		 db 10011010b
+		 db 00000000b
+		 db 0
+.data16: dw 0xffff
+		 dw 0
+		 db 0
+		 db 10010010b
+		 db 00000000b
+		 db 0
 .end:
 gdtr: dw (gdt.end-gdt)-1
 	  dd gdt
