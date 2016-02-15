@@ -1,5 +1,7 @@
 bits 16
 
+extern _kmain
+
 section .text16
 start:
 	mov dx, [bp-2] ; keep drive letter around
@@ -97,6 +99,9 @@ prot_start:
 	mov eax, edx
 	movzx eax, dl
 	push eax ; push drive letter, at [bp-4]
+
+	call _kmain
+
 	hlt
 	jmp $
 
