@@ -1,16 +1,8 @@
 #include "serial.h"
+#include "ktype.h"
+#include "utils.h"
 
-void outb(unsigned short port, unsigned char value) {
-	asm volatile ("outb %1, %0" : : "dN" (port), "a" (value));
-}
-
-unsigned char inb(unsigned short port) {
-	unsigned char rv;
-	asm volatile ("inb %1, %0" : "=a" (rv) : "dN" (port));
-	return rv;
-}
-
-int is_transmit_empty() {
+i32 is_transmit_empty() {
 	return inb(PORT + 5) & 0x20;
 }
 
@@ -30,7 +22,7 @@ void sputc(char a) {
 }
 
 void sprint(char *str) {
-	unsigned int len = 0;
+	u32 len = 0;
 	while (str[len] != 0) {
 		sputc(str[len]);
 		len++;
