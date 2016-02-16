@@ -12,8 +12,10 @@ typedef struct registers
 } registers_t;
 
 void outb(u16 port, u8 value);
+void outw(u16 port, u16 value);
 u8 inb(u16 port);
 void io_wait();
+void reboot();
 void dputc(char c);
 void dprint(char *str);
 void dputn(u32 n);

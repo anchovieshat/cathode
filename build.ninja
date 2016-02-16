@@ -22,7 +22,7 @@ rule ld
     description = ld
 
 rule gcc
-    command = /usr/local/gcc-4.8.1-for-linux32/bin/i586-pc-linux-gcc -m$fmt -c $in $cflags -o $out
+    command = /usr/local/gcc-4.8.1-for-linux64/bin/x86_64-pc-linux-gcc -m$fmt -c $in $cflags -o $out
     description = gcc $out
 
 img = $builddir/boot.img
@@ -38,42 +38,42 @@ build $builddir/.stage2_copied: copy_stage2 | $img $stage2
 build $stage1: yasm fatboot/boot.asm
     fmt = bin
 
-build $stage2: ld $builddir/load.o $builddir/main.o $builddir/serial.o $builddir/vga.o $builddir/utils.o $builddir/gdt.o $builddir/idt.o $builddir/interrupt.o $builddir/timer.o $builddir/mem.o $builddir/paging.o $builddir/kb.o
+build $stage2: ld $builddir/int.o $builddir/load.o $builddir/main.o $builddir/serial.o $builddir/vga.o $builddir/utils.o $builddir/gdt.o $builddir/idt.o $builddir/interrupt.o $builddir/timer.o $builddir/mem.o $builddir/kb.o
     script = stage2/load.ld
 build $builddir/load.o: yasm stage2/load.asm
-    fmt = elf
+    fmt = elf64
+
+build $builddir/int.o: yasm kernel/int.asm
+    fmt = elf64
 
 build $builddir/main.o: gcc kernel/main.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/serial.o: gcc kernel/serial.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/vga.o: gcc kernel/vga.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/utils.o: gcc kernel/utils.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/gdt.o: gcc kernel/gdt.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/idt.o: gcc kernel/idt.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/interrupt.o: gcc kernel/interrupt.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/timer.o: gcc kernel/timer.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/mem.o: gcc kernel/mem.c
-    fmt = 32
-
-build $builddir/paging.o: gcc kernel/paging.c
-    fmt = 32
+    fmt = 64
 
 build $builddir/kb.o: gcc kernel/kb.c
-    fmt = 32
+    fmt = 64
 
 default $builddir/.stage1_copied $builddir/.stage2_copied

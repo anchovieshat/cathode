@@ -18,7 +18,7 @@ start:
 .s:
 	cli
 .goto_prot
-	lgdt [gdtr]
+	lgdt [gdtr32]
 	mov eax, cr0
 	or eax, 1
 	mov cr0, eax
@@ -101,132 +101,127 @@ prot_start:
 	movzx eax, dl
 	push eax ; push drive letter, at [bp-4]
 
-	call _kmain
+	call check_cpuid
+	call check_long_mode
+
+	; Clear page tables
+	mov edi, 0x1000
+	mov cr3, edi
+	xor eax, eax
+	mov ecx, 4096
+	rep stosd
+	mov edi, cr3
+
+	mov dword [edi], 0x2003 ; 0x0003 <- Present & Read-Write
+	add edi, 0x1000
+	mov dword [edi], 0x3003
+	add edi, 0x1000
+	mov dword [edi], 0x4003
+	add edi, 0x1000
+
+	mov ebx, 0x00000003
+	mov ecx, 512
+
+set_entry:
+	mov dword [edi], ebx
+	add ebx, 0x1000
+	add edi, 8
+	loop set_entry
+
+enable_PAE:
+	mov eax, cr4
+	or eax, 1 << 5
+	mov cr4, eax
+
+to_ia32e:
+	mov ecx, 0xC0000080
+	rdmsr
+	or eax, 1 << 8
+	wrmsr
+
+	mov eax, cr0
+	or eax, 1 << 31
+	mov cr0, eax
+
+	lgdt [gdtr64]
+	jmp gdt64.code:long_start
 
 	hlt
 	jmp $
 
-global idt_load
-extern idtp
+check_long_mode:
+	mov eax, 0x80000000
+	cpuid
+	cmp eax, 0x80000001
+	jb no_long_mode
 
-idt_load:
-	lidt [idtp]
-	sti
+	mov eax, 0x80000001
+	cpuid
+	test edx, 1 << 29
+	jz no_long_mode
+
+check_cpuid:
+	pushfd
+	pop eax
+
+	mov ecx, eax
+
+	xor eax, 1 << 21
+
+	push eax
+	popfd
+
+	pushfd
+	pop eax
+
+	push ecx
+	popfd
+	xor eax, ecx
+	jz no_cpuid
 	ret
 
-%macro isr 1
-	global isr%1
-	isr%1:
-		cli
-		push byte 0
-		push byte %1
-		jmp common_stub
-%endmacro
+no_cpuid:
+	jmp die32
 
-%macro isr_err 1
-	global isr%1
-	isr%1
-		cli
-		push byte %1
-		jmp common_stub
-%endmacro
+no_long_mode:
+	jmp die32
 
-%macro irq 2
-	global irq%1
-	irq%1:
-		cli
-		push byte 0
-		push byte %2
-		jmp common_stub
-%endmacro
+die32:
+	cli
+	hlt
+	jmp die32
 
-isr 0
-isr 1
-isr 2
-isr 3
-isr 4
-isr 5
-isr 6
-isr 7
-isr_err 8
-isr 9
-isr_err 10
-isr_err 11
-isr_err 12
-isr_err 13
-isr_err 14
-isr 15
-isr 16
-isr 17
-isr 18
-isr 19
-isr 20
-isr 21
-isr 22
-isr 23
-isr 24
-isr 25
-isr 26
-isr 27
-isr 28
-isr 29
-isr 30
-isr 31
-irq 0, 32
-irq 1, 33
-irq 2, 34
-irq 3, 35
-irq 4, 36
-irq 5, 37
-irq 6, 38
-irq 7, 39
-irq 8, 40
-irq 9, 41
-irq 10,	42
-irq 11,	43
-irq 12,	44
-irq 13,	45
-irq 14,	46
-irq 15,	47
-
-extern interrupt_handler
-
-common_stub:
-	pushad                    ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
-
-	mov ax, ds               ; Lower 16-bits of eax = ds.
-	push eax                 ; save the data segment descriptor
-
-	mov ax, 0x10  ; load the kernel data segment descriptor
+bits 64
+long_start:
+	cli
+	mov ax, gdt64.data
 	mov ds, ax
 	mov es, ax
 	mov fs, ax
 	mov gs, ax
+	mov ss, ax
 
-	call interrupt_handler
+	call _kmain
 
-	pop eax        ; reload the original data segment descriptor
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-
-	popad                     ; Pops edi,esi,ebp...
-	add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-	iretd           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+	hlt
 
 section .rodata
 
 msg: db "Booting stage2...",0xa,0xd
-.size: equ $-msg
+.size: equ $ - msg
 
 disab: db "A20 disabled...",0xa,0xd
-.size: equ $-disab
+.size: equ $ - disab
 
-global gdt
-global gdtr
+cpu_id: db "No CPUID...",0xa,0xd
+.size: equ $ - cpu_id
 
-gdt:
+global gdt32
+global gdtr32
+global gdt64
+global gdtr64
+
+gdt32:
 .null:		  ; 0x000000000000000
 	dw 0
 	dw 0
@@ -234,14 +229,14 @@ gdt:
 	db 0
 	db 0
 	db 0
-.code32:		; 0xFFFF00009ACF
+.code:			; 0xFFFF00009ACF
 	dw 0xffff   ; Limit_low
 	dw 0		; Base_low
 	db 0		; Base_middle
 	db 10011010b; Access Byte 0x9A
 	db 11001111b; [Limit_high][Flags] 0xCF
 	db 0		; Base_high
-.data32:		; 0xFFFF0000092CF
+.data:			; 0xFFFF0000092CF
 	dw 0xffff
 	dw 0
 	db 0
@@ -249,6 +244,33 @@ gdt:
 	db 11001111b; 0xCF
 	db 0
 .end:
-gdtr:
-	dw (gdt.end-gdt)-1
-	dd gdt
+gdtr32:
+	dw (gdt32.end - gdt32) - 1
+	dd gdt32
+
+gdt64:							 ; Global Descriptor Table (64-bit).
+.null: equ $ - gdt64			 ; The null descriptor.
+	dw 0						 ; Limit (low).
+	dw 0						 ; Base (low).
+	db 0						 ; Base (middle)
+	db 0						 ; Access.
+	db 0						 ; Granularity.
+	db 0						 ; Base (high).
+.code: equ $ - gdt64			 ; The code descriptor.
+	dw 0						 ; Limit (low).
+	dw 0						 ; Base (low).
+	db 0						 ; Base (middle)
+	db 10011010b				 ; Access (exec/read).
+	db 00100000b				 ; Granularity.
+	db 0						 ; Base (high).
+.data: equ $ - gdt64			 ; The data descriptor.
+	dw 0						 ; Limit (low).
+	dw 0						 ; Base (low).
+	db 0						 ; Base (middle)
+	db 10010010b				 ; Access (read/write).
+	db 00000000b				 ; Granularity.
+	db 0						 ; Base (high).
+.end:
+gdtr64:							 ; The GDT-pointer.
+	dw (gdt64.end - gdt64) - 1	 ; Limit.
+	dq gdt64					 ; Base.

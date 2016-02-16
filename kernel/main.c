@@ -45,15 +45,15 @@ void _kmain() {
 	make_line();
 	center_message("Welcome to Cathode!");
 	make_line();
-
+	/*
 	init_idt();
-	//init_keyboard();
+	init_keyboard();
 	//init_timer(2);
-	init_paging();
+	//init_paging();
 
 	make_line();
 	center_message("MEMORY ONLINE");
 	make_line();
-
+	*/
 
 }

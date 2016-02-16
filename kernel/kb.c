@@ -23,6 +23,8 @@ void keyboard_callback(registers_t regs) {
 
 	if ((kb_us[scancode] == 'c') && (kb_us[29] == 1)) {
 		dprint("^c");
+		reboot();
+
 	} else if (scancode < 128) {
 		if (kb_us[42]) {
 			dputc(kb_us[scancode] - 32);
@@ -35,7 +37,3 @@ void keyboard_callback(registers_t regs) {
 void init_keyboard() {
 	register_interrupt_handler(IRQ1, &keyboard_callback);
 }
-
-// BIOS reboot
-// outb(0x0, 0x70)
-// outb(0x8f, 0x71)

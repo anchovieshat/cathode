@@ -7,6 +7,10 @@ void outb(u16 port, u8 value) {
 	asm volatile ("outb %1, %0" : : "dN" (port), "a" (value));
 }
 
+void outw(u16 port, u16 value) {
+	asm volatile ("outw %1, %0" : : "dN" (port), "a" (value));
+}
+
 u8 inb(u16 port) {
 	u8 rv;
 	asm volatile ("inb %1, %0" : "=a" (rv) : "dN" (port));
@@ -59,4 +63,13 @@ u32 strlen(char *str) {
 	u32 len = 0;
 	while (str[len] != 0) { len++; }
 	return len;
+}
+
+void reboot() {
+	asm volatile ("cli");
+
+	u8 tmp = 0x02;
+	while (tmp & 0x02)
+		tmp = inb(0x64);
+	outb(0x64, 0xFE);
 }

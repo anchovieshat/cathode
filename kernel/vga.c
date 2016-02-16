@@ -95,7 +95,7 @@ void vprint(char *str) {
 	}
 }
 
-void vputn(u32 n) {
+void vputn(u64 n) {
 	if (n == 0) {
 		vputc('0');
 		return;
