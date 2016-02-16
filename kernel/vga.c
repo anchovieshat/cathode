@@ -88,3 +88,28 @@ void vprint(char *str) {
 		len++;
 	}
 }
+
+void vputn(u32 n) {
+    if (n == 0) {
+        vputc('0');
+        return;
+    }
+
+		char c[32];
+    i32 acc = n;
+    i32 i = 0;
+    while (acc > 0) {
+        c[i] = '0' + acc%10;
+        acc /= 10;
+        i++;
+    }
+    c[i] = 0;
+
+    char c2[32];
+    c2[i--] = 0;
+    i32 j = 0;
+    while(i >= 0) {
+        c2[i--] = c[j++];
+    }
+    vprint(c2);
+}

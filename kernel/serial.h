@@ -9,5 +9,6 @@ i32 is_transmit_empty();
 void init_serial();
 void sputc(char a);
 void sprint(char *str);
+void sputn(u32 n);
 
 #endif

@@ -21,6 +21,31 @@ void sputc(char a) {
 	outb(PORT, a);
 }
 
+void sputn(u32 n) {
+    if (n == 0) {
+        sputc('0');
+        return;
+    }
+
+		char c[32];
+    i32 acc = n;
+    i32 i = 0;
+    while (acc > 0) {
+        c[i] = '0' + acc%10;
+        acc /= 10;
+        i++;
+    }
+    c[i] = 0;
+
+    char c2[32];
+    c2[i--] = 0;
+    i32 j = 0;
+    while(i >= 0) {
+        c2[i--] = c[j++];
+    }
+    sprint(c2);
+}
+
 void sprint(char *str) {
 	u32 len = 0;
 	while (str[len] != 0) {

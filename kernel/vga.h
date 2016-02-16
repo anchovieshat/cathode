@@ -30,6 +30,7 @@ typedef enum vga_colors {
 void init_term();
 void vputc(char c);
 void vprint(char *c);
+void vputn(u32 n);
 void clear_term();
 
 #endif

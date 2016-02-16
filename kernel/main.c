@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "vga.h"
 #include "serial.h"
+#include "gdt.h"
 
 void make_line() {
   dputc('+');
