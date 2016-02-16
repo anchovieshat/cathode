@@ -69,6 +69,12 @@ void vputc(char c) {
 	} else if (c == '\n') {
 		cur_x = 0;
 		cur_y++;
+	} else if (c == '\r') {
+		cur_x = 0;
+	} else if (c == 0x08 && cur_x) {
+		cur_x--;
+		const u32 i = (cur_y * VGA_WIDTH) + cur_x;
+		term_buf[i] = make_vgaentry(' ', term_color);
 	}
 
 	// new line?

@@ -25,4 +25,5 @@ void init_timer(u32 freq) {
 	// Send freq divisor
 	outb(0x40, low);
 	outb(0x40, high);
+	dprint("Timer Initialized!\n");
 }

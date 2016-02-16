@@ -1,6 +1,7 @@
 bits 16
 
 section .text16
+global start
 start:
 	mov dx, [bp-2] ; keep drive letter around
 	mov bp, msg
@@ -212,7 +213,6 @@ common_stub:
 
 	popad                     ; Pops edi,esi,ebp...
 	add esp, 8     ; Cleans up the pushed error code and pushed ISR number
-	sti
 	iretd           ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
 section .rodata

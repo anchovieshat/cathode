@@ -5,4 +5,5 @@ SECTIONS {
 	. = 0x8000;
 	.text16 : { *(.text16) }
 	.text : { *(.text) }
+	end = .; _end = .; __end = .;
 }

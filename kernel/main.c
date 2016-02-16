@@ -4,6 +4,7 @@
 #include "gdt.h"
 #include "idt.h"
 #include "timer.h"
+#include "paging.h"
 
 void make_line() {
 	dputc('+');
@@ -46,5 +47,13 @@ void _kmain() {
 	make_line();
 
 	init_idt();
-	init_timer(1);
+	//init_keyboard();
+	//init_timer(2);
+	init_paging();
+
+	make_line();
+	center_message("MEMORY ONLINE");
+	make_line();
+
+
 }
