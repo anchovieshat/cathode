@@ -2,6 +2,8 @@
 #include "vga.h"
 #include "serial.h"
 #include "gdt.h"
+#include "idt.h"
+#include "timer.h"
 
 void make_line() {
 	dputc('+');
@@ -42,4 +44,7 @@ void _kmain() {
 	make_line();
 	center_message("Welcome to Cathode!");
 	make_line();
+
+	init_idt();
+	init_timer(1);
 }

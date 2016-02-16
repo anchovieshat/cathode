@@ -38,7 +38,7 @@ build $builddir/.stage2_copied: copy_stage2 | $img $stage2
 build $stage1: yasm fatboot/boot.asm
     fmt = bin
 
-build $stage2: ld $builddir/load.o $builddir/main.o $builddir/serial.o $builddir/vga.o $builddir/utils.o $builddir/gdt.o
+build $stage2: ld $builddir/load.o $builddir/main.o $builddir/serial.o $builddir/vga.o $builddir/utils.o $builddir/gdt.o $builddir/idt.o $builddir/interrupt.o $builddir/timer.o
     script = stage2/load.ld
 build $builddir/load.o: yasm stage2/load.asm
     fmt = elf
@@ -58,4 +58,12 @@ build $builddir/utils.o: gcc kernel/utils.c
 build $builddir/gdt.o: gcc kernel/gdt.c
     fmt = 32
 
+build $builddir/idt.o: gcc kernel/idt.c
+    fmt = 32
+
+build $builddir/interrupt.o: gcc kernel/interrupt.c
+    fmt = 32
+
+build $builddir/timer.o: gcc kernel/timer.c
+    fmt = 32
 default $builddir/.stage1_copied $builddir/.stage2_copied
