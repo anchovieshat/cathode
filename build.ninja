@@ -2,28 +2,28 @@ builddir = build
 cflags = -std=gnu99 -ffreestanding -Wall -Wextra
 
 rule hdiutil_create_fat
-	command = hdiutil create -ov -fs "MS-DOS FAT32" -layout NONE -megabytes $size_mb $out.dmg && mv $out.dmg $out
-	description = hdiutil $out
+    command = hdiutil create -ov -fs "MS-DOS FAT32" -layout NONE -megabytes $size_mb $out.dmg && mv $out.dmg $out
+    description = hdiutil $out
 
 rule copy_stage1
-	command = dd if=$stage1 of=$img conv=notrunc bs=1 count=420 seek=90 && touch $out
-	description = copy stage1
+    command = dd if=$stage1 of=$img conv=notrunc bs=1 count=420 seek=90 && touch $out
+    description = copy stage1
 
 rule copy_stage2
-	command = mcopy -D o -D O -ni $img $stage2 ::/$stage2_file && touch $out
-	description = copy stage2
+    command = mcopy -D o -D O -ni $img $stage2 ::/$stage2_file && touch $out
+    description = copy stage2
 
 rule yasm
-	command = yasm -f$fmt -o $out $in
-	description = yasm $out
+    command = yasm -f$fmt -o $out $in
+    description = yasm $out
 
 rule ld
-	command = x86_64-unknown-linux-ld -T$script -o $out $in
-	description = ld
+    command = x86_64-unknown-linux-ld -T$script -o $out $in
+    description = ld
 
 rule gcc
-	command = /usr/local/gcc-4.8.1-for-linux32/bin/i586-pc-linux-gcc -m$fmt -c $in $cflags -o $out
-	description = gcc $out
+    command = /usr/local/gcc-4.8.1-for-linux32/bin/i586-pc-linux-gcc -m$fmt -c $in $cflags -o $out
+    description = gcc $out
 
 img = $builddir/boot.img
 stage1 = $builddir/fatboot.bin
@@ -31,31 +31,31 @@ stage2 = $builddir/stage2.ldr
 stage2_file = stage2.ldr
 
 build $img: hdiutil_create_fat
-	size_mb = 40
+    size_mb = 40
 build $builddir/.stage1_copied: copy_stage1 | $img $stage1
 build $builddir/.stage2_copied: copy_stage2 | $img $stage2
 
 build $stage1: yasm fatboot/boot.asm
-	fmt = bin
+    fmt = bin
 
 build $stage2: ld $builddir/load.o $builddir/main.o $builddir/serial.o $builddir/vga.o $builddir/utils.o $builddir/gdt.o
-	script = stage2/load.ld
+    script = stage2/load.ld
 build $builddir/load.o: yasm stage2/load.asm
-	fmt = elf
+    fmt = elf
 
 build $builddir/main.o: gcc kernel/main.c
-	fmt = 32
+    fmt = 32
 
 build $builddir/serial.o: gcc kernel/serial.c
-	fmt = 32
+    fmt = 32
 
 build $builddir/vga.o: gcc kernel/vga.c
-	fmt = 32
+    fmt = 32
 
 build $builddir/utils.o: gcc kernel/utils.c
-	fmt = 32
+    fmt = 32
 
 build $builddir/gdt.o: gcc kernel/gdt.c
-	fmt = 32
+    fmt = 32
 
 default $builddir/.stage1_copied $builddir/.stage2_copied
