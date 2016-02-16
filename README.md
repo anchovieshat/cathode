@@ -5,7 +5,7 @@
 1. Install all dependencies:
 	* `yasm`
 	* `clang/gcc` (Requires edit to ninja file)
-	* `ld`				(Requires edit to ninja file)
+	* `ld`  (Requires edit to ninja file)
 	* `objcopy`
 	* `dd`
 	* `parted`

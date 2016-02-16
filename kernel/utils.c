@@ -14,28 +14,28 @@ u8 inb(u16 port) {
 }
 
 void dprint(char *str) {
-  vprint(str);
-  sprint(str);
+	vprint(str);
+	sprint(str);
 }
 
 void dputc(char c) {
-  vputc(c);
-  sputc(c);
+	vputc(c);
+	sputc(c);
 }
 
 void dputn(u32 n) {
-  vputn(n);
-  sputn(n);
+	vputn(n);
+	sputn(n);
 }
 
 void dentry(char *str, u32 n) {
-  dprint(str);
-  dputn(n);
-  dputc('\n');
+	dprint(str);
+	dputn(n);
+	dputc('\n');
 }
 
 u32 strlen(char *str) {
-  u32 len = 0;
-  while (str[len] != 0) { len++; }
-  return len;
+	u32 len = 0;
+	while (str[len] != 0) { len++; }
+	return len;
 }

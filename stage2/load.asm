@@ -118,28 +118,28 @@ global gdt
 global gdtr
 
 gdt:
-.null:						 ; 0x000000000000000
-		 dw 0
-		 dw 0
-	   db 0
-	   db 0
-	   db 0
-		 db 0
-.code32: 					 ; 0xFFFF00009ACF
-		 dw 0xffff 	 	 ; Limit_low
-     dw 0				 	 ; Base_low
-     db 0				 	 ; Base_middle
-     db 10011010b	 ; Access Byte 0x9A
-     db 11001111b	 ; [Limit_high][Flags] 0xCF
-     db 0				 	 ; Base_high
-.data32:					 ; 0xFFFF0000092CF
-		 dw 0xffff
-     dw 0
-     db 0
-     db 10010010b	 ; 0x92
-     db 11001111b	 ; 0xCF
-     db 0
+.null:		  ; 0x000000000000000
+	dw 0
+	dw 0
+	db 0
+	db 0
+	db 0
+	db 0
+.code32:		; 0xFFFF00009ACF
+	dw 0xffff   ; Limit_low
+	dw 0		; Base_low
+	db 0		; Base_middle
+	db 10011010b; Access Byte 0x9A
+	db 11001111b; [Limit_high][Flags] 0xCF
+	db 0		; Base_high
+.data32:		; 0xFFFF0000092CF
+	dw 0xffff
+	dw 0
+	db 0
+	db 10010010b; 0x92
+	db 11001111b; 0xCF
+	db 0
 .end:
 gdtr:
-		dw (gdt.end-gdt)-1
-	  dd gdt
+	dw (gdt.end-gdt)-1
+	dd gdt
