@@ -20,6 +20,10 @@ rule ld
     command = x86_64-unknown-linux-ld -T$script -o $out $in
     description = ld
 
+rule cc
+    command = clang -c $flags -o $out $in
+    description = cc $out
+
 img = $builddir/boot.img
 stage1 = $builddir/fatboot.bin
 stage2 = $builddir/stage2.ldr
@@ -28,14 +32,17 @@ stage2_file = stage2.ldr
 build $img: hdiutil_create_fat
     size_mb = 40
 build $builddir/.stage1_copied: copy_stage1 | $img $stage1
-build $builddir/.stage2_copied: copy_stage2 | $img $stage2
+build $builddir/.stage2_copied: copy_stage2 | $stage2 || $img
 
 build $stage1: yasm fatboot/boot.asm
     fmt = bin
 
-build $stage2: ld $builddir/load.o
+build $stage2: ld $builddir/load.o $builddir/main.o
     script = stage2/load.ld
 build $builddir/load.o: yasm stage2/load.asm
     fmt = elf
+
+build $builddir/main.o: cc stage2/main.c
+    flags = -m32 -ffreestanding -target x86_64-unknown-gnu-linux -mno-sse
 
 default $builddir/.stage1_copied $builddir/.stage2_copied
