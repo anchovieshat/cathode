@@ -9,12 +9,14 @@ struct idt_entry {
 	u8 reserved;
 	u8 flags;
 	u16 base_mid;
+	u32 base_high;
+	u32 reserved2;
 } __attribute__((packed));
 typedef struct idt_entry idt_entry_t;
 
 struct idt_ptr {
 	u16 limit;
-	u32 base;
+	u64 base;
 } __attribute__((packed));
 typedef struct idt_ptr idt_ptr_t;
 

@@ -1,5 +1,5 @@
 builddir = build
-cflags = -std=gnu99 -ffreestanding -Wall -Wextra
+cflags = -std=gnu99 -target x86_64-unknown-gnu-linux -ffreestanding -Wall -Wextra -mno-red-zone -mno-mmx -mno-sse -mno-sse2
 
 rule hdiutil_create_fat
     command = hdiutil create -ov -fs "MS-DOS FAT32" -layout NONE -megabytes $size_mb $out.dmg && mv $out.dmg $out
@@ -21,9 +21,9 @@ rule ld
     command = x86_64-unknown-linux-ld -T$script -o $out $in
     description = ld
 
-rule gcc
-    command = /usr/local/gcc-4.8.1-for-linux64/bin/x86_64-pc-linux-gcc -m$fmt -c $in $cflags -o $out
-    description = gcc $out
+rule clang
+    command = clang -m$fmt -c $in $cflags -o $out
+    description = clang $out
 
 img = $builddir/boot.img
 stage1 = $builddir/fatboot.bin
@@ -33,7 +33,7 @@ stage2_file = stage2.ldr
 build $img: hdiutil_create_fat
     size_mb = 40
 build $builddir/.stage1_copied: copy_stage1 | $img $stage1
-build $builddir/.stage2_copied: copy_stage2 | $img $stage2
+build $builddir/.stage2_copied: copy_stage2 | $stage2 || $img
 
 build $stage1: yasm fatboot/boot.asm
     fmt = bin
@@ -46,34 +46,34 @@ build $builddir/load.o: yasm stage2/load.asm
 build $builddir/int.o: yasm kernel/int.asm
     fmt = elf64
 
-build $builddir/main.o: gcc kernel/main.c
+build $builddir/main.o: clang kernel/main.c
     fmt = 64
 
-build $builddir/serial.o: gcc kernel/serial.c
+build $builddir/serial.o: clang kernel/serial.c
     fmt = 64
 
-build $builddir/vga.o: gcc kernel/vga.c
+build $builddir/vga.o: clang kernel/vga.c
     fmt = 64
 
-build $builddir/utils.o: gcc kernel/utils.c
+build $builddir/utils.o: clang kernel/utils.c
     fmt = 64
 
-build $builddir/gdt.o: gcc kernel/gdt.c
+build $builddir/gdt.o: clang kernel/gdt.c
     fmt = 64
 
-build $builddir/idt.o: gcc kernel/idt.c
+build $builddir/idt.o: clang kernel/idt.c
     fmt = 64
 
-build $builddir/interrupt.o: gcc kernel/interrupt.c
+build $builddir/interrupt.o: clang kernel/interrupt.c
     fmt = 64
 
-build $builddir/timer.o: gcc kernel/timer.c
+build $builddir/timer.o: clang kernel/timer.c
     fmt = 64
 
-build $builddir/mem.o: gcc kernel/mem.c
+build $builddir/mem.o: clang kernel/mem.c
     fmt = 64
 
-build $builddir/kb.o: gcc kernel/kb.c
+build $builddir/kb.o: clang kernel/kb.c
     fmt = 64
 
 default $builddir/.stage1_copied $builddir/.stage2_copied

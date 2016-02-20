@@ -5,5 +5,11 @@ SECTIONS {
 	. = 0x8000;
 	.text16 : { *(.text16) }
 	.text : { *(.text) }
+
+	/DISCARD/ :
+	{
+		*(.comment)
+	}
+
 	end = .; _end = .; __end = .;
 }

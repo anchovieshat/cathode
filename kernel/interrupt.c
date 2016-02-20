@@ -43,6 +43,12 @@ char *exception_messages[] =
 };
 
 void interrupt_handler(registers_t regs) {
+	if (regs.int_no > 255) {
+		dprint("THE FUCK?\n");
+		print_regs(regs);
+		for (;;) { asm ("hlt"); }
+	}
+
 	if (regs.int_no > 31) {
 		irq_handler(regs);
 	} else {
@@ -51,9 +57,10 @@ void interrupt_handler(registers_t regs) {
 }
 
 void isr_handler(registers_t regs) {
-	dprint(exception_messages[regs.int_no]);
-	dprint(" Exception. System Halted!\n");
-	for (;;) { asm ("hlt"); }
+	dentry("Interrupt: ", regs.int_no);
+	//dprint(exception_messages[regs.int_no]);
+	//dprint(" Exception. System Halted!\n");
+	//for (;;) { asm ("hlt"); }
 }
 
 void irq_handler(registers_t regs) {

@@ -3,12 +3,11 @@
 
 #include "ktype.h"
 
-typedef struct registers
-{
-   u32 ds;
-   u32 edi, esi, ebp, esp, ebx, edx, ecx, eax; // Pushed by pushad.
-   u32 int_no, err_code;    // Interrupt number and error code (if applicable)
-   u32 eip, cs, eflags, ss; // Pushed by the processor automatically.
+typedef struct registers {
+	u16 ds;
+	u64 rdi, rsi, rbp, rsp, rbx, rdx, rcx, rax;
+	u32 int_no, err_code;
+	u64 rip, eflags, useresp, ss;
 } registers_t;
 
 void outb(u16 port, u8 value);

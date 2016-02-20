@@ -43,20 +43,19 @@ void dentry(char *str, u32 n) {
 }
 
 void print_regs(registers_t regs) {
-	dentry("ds: ", regs.ds);
-	dentry("edi: ", regs.edi);
-	dentry("esi: ", regs.esi);
-	dentry("ebp: ", regs.ebp);
-	dentry("ebx: ", regs.ebx);
-	dentry("edx: ", regs.edx);
-	dentry("ecx: ", regs.ecx);
-	dentry("eax: ", regs.eax);
+	dentry("rdi: ", regs.rdi);
+	dentry("rsi: ", regs.rsi);
+	dentry("rbp: ", regs.rbp);
+	dentry("rsp: ", regs.rsp);
+	dentry("rbx: ", regs.rbx);
+	dentry("rdx: ", regs.rdx);
+	dentry("rcx: ", regs.rcx);
+	dentry("rax: ", regs.rax);
 	dentry("int_no: ", regs.int_no);
 	dentry("err_code: ", regs.err_code);
-	dentry("cs: ", regs.cs);
+	dentry("rip: ", regs.rip);
 	dentry("eflags: ", regs.eflags);
-	dentry("esp: ", regs.esp);
-	dentry("ss: ", regs.ss);
+	dentry("useresp: ", regs.useresp);
 }
 
 u32 strlen(char *str) {

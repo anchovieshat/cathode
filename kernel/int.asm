@@ -1,3 +1,5 @@
+bits 64
+
 global idt_load
 extern idtp
 
@@ -10,8 +12,8 @@ idt_load:
 	global isr%1
 	isr%1:
 		cli
-		push byte 0
-		push byte %1
+		push dword 0
+		push dword %1
 		jmp common_stub
 %endmacro
 
@@ -19,7 +21,7 @@ idt_load:
 	global isr%1
 	isr%1
 		cli
-		push byte %1
+		push dword %1
 		jmp common_stub
 %endmacro
 
@@ -27,8 +29,8 @@ idt_load:
 	global irq%1
 	irq%1:
 		cli
-		push byte 0
-		push byte %2
+		push dword 0
+		push dword %2
 		jmp common_stub
 %endmacro
 
@@ -84,4 +86,39 @@ irq 15,	47
 extern interrupt_handler
 
 common_stub:
-	ret
+	push rax
+	push rcx
+	push rdx
+	push rbx
+	push rbp
+	push rsi
+	push rdi
+
+	mov ax, ds
+	push rax
+
+	mov ax, 0x10
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+
+	call interrupt_handler
+
+	pop rbx
+	mov ds, bx
+	mov es, bx
+	mov fs, bx
+	mov gs, bx
+
+	pop rdi
+	pop rsi
+	pop rbp
+	pop rbx
+	pop rdx
+	pop rcx
+	pop rax
+
+	add rsp, 8
+	sti
+	iretq
